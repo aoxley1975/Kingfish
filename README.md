@@ -8,13 +8,5 @@ Sequencing reads from the demultiplexed samples analysed in this study have been
 
 This repository contains following folders -
 
-data/ # raw data generated using QIIME2-2018.6
-
-filtered-table.qza # OTU table
-tax.txt # OTU taxonomy
-metadata.txt # metadata file
-rooted-tree.qza # OTU tree
-code/ # QIIME commands and phyloseq scripts
-
-analysis.sh # QIIME2-2018.6 analysis steps
-PupFish.RMD # Phyloseq scripts
+phyloseq_scripts.txt
+phyloseq_object.rds
