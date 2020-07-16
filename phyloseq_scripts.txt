@@ -1,0 +1,546 @@
+# Legrand et al 2020. Animal microbiome.
+
+#Create phyloseq objects
+
+phy_gut <- subset_samples(phy_all, SampleType %in% "gut")
+phy_skin <- subset_samples(phy_all, SampleType %in% "skin")
+phy_gut_tank <- subset_samples(phy_gut, Cultivation %in% "tank")
+phy_skin_tank <- subset_samples(phy_skin, Cultivation %in% "tank")
+phy_gut_tank_control <- subset_samples(phy_gut_tank, InoculationMethod %in% "control")
+phy_skin_tank_control <- subset_samples(phy_skin_tank, InoculationMethod %in% "control")
+phy_gut_transplant <- subset_samples(phy_all, Nocage %in% "yes")
+gutorinoculum = c("gut", "inoculum")
+phy_gut_transplant <- subset_samples(phy_gut_transplant, SampleType %in%  gutorinoculum)
+phy_gutonly_transplant <- subset_samples(phy_gut_transplant, SampleType %in% "gut")
+noD0 = c("T1", "T2", "T3")
+phy_gut_transplant_nod0 <- subset_samples(phy_gut_tank, TimePoint %in%  noD0)
+
+#Plot abundance of particular ASVs
+
+boxplot_abundance(phy_gut_cagevstank, x='Cultivation', y='fd674bf6f9d454f8c1219c43e31e2791', line = NULL, violin = FALSE,
+                                            na.rm = TRUE, show.points = TRUE)
+
+phy_gut_tank_control_merged.rel <- transform_sample_counts(phy_gut_tank_control_merged, function(x) x / sum(x) )
+mycoplasma_antibiotics <- boxplot_abundance(phy_gut_tank_control_merged.rel, x='Antibiotic', y='fd674bf6f9d454f8c1219c43e31e2791', line = NULL, violin = FALSE,
+                  na.rm = TRUE, show.points = TRUE)
+mycoplasma_antibiotics <- boxplot_abundance(phy_gut_tank_control_merged.rel, x='Antibiotic', y='fd674bf6f9d454f8c1219c43e31e2791', line = NULL, violin = FALSE,
+                                            na.rm = TRUE, show.points = TRUE)
+t.test(mycoplasma_antibiotics$data$yvar~mycoplasma_antibiotics$data$xvar)
+wilcox.test(mycoplasma_antibiotics$data$yvar~mycoplasma_antibiotics$data$xvar)
+boxplot(mycoplasma_antibiotics$data$yvar~mycoplasma_antibiotics$data$xvar, xlab = "Antibiotics", col= (c("#de7065ff", "#7e4e90ff")))
+
+write.csv(mycoplasma_antibiotics$data, file="count_mycoplasma_antibiotics.csv")
+count_mycoplasma_antibiotics <- read_csv("count_mycoplasma_antibiotics.csv")
+my_comparisons <- list( c("yes", "no"))
+
+ggboxplot(count_mycoplasma_antibiotics, x = "xvar", y = "yvar", xlab = "Antibiotics", ylab = "Counts/sample", add = "jitter", fill="xvar", palette = (c("#66CDAA", "#7e4e90ff"))) +
+  stat_compare_means(comparisons = my_comparisons, method = "t.test", label = "p.signif", size = 6) +
+  theme(legend.position = "none") 
+ggboxplot(count_mycoplasma_antibiotics, x = "xvar", y = "yvar", xlab = "Antibiotics", ylab = "Mycoplasma abundance", add = "jitter", fill="xvar", palette = (c("#66CDAA", "#7e4e90ff"))) +
+  theme(legend.position = "none") +
+  scale_y_continuous(labels = scales::percent)+
+  theme(text = element_text(size=25), panel.background = element_rect(fill = "white", colour = "black",
+                                                                      size = 1, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "grey"))
+
+ggboxplot(count_mycoplasma_antibiotics, x = "xvar", y = "yvar", xlab = "Antibiotics", ylab = "Counts/sample", add = "jitter", fill="xvar", palette = (c("#66CDAA", "#7e4e90ff"))) +
+  stat_compare_means(comparisons = my_comparisons, label.y = c(11000), method = "wilcox.test", label = "p.signif", size = 6) +
+  theme(legend.position = "none") 
+  
+boxplot_abundance(phy_gut_tank_control_merged.rel, x='Antibiotic', y='524d4e332769bad5d50a40c9c46db145', line = NULL, violin = FALSE,
+                  na.rm = TRUE, show.points = TRUE)
+brevinema_antibiotics <- boxplot_abundance(phy_gut_tank_control_merged.rel, x='Antibiotics', y='524d4e332769bad5d50a40c9c46db145', line = NULL, violin = FALSE,
+                                            na.rm = TRUE, show.points = TRUE)
+t.test(brevinema_antibiotics$data$yvar~brevinema_antibiotics$data$xvar)
+wilcox.test(brevinema_antibiotics$data$yvar~brevinema_antibiotics$data$xvar)
+
+write.csv(brevinema_antibiotics$data, file="count_brevinema_antibiotics.csv")
+count_brevinema_antibiotics <- read_csv("count_brevinema_antibiotics.csv")
+ggboxplot(count_brevinema_antibiotics, x = "xvar", y = "yvar", xlab = "Antibiotics", ylab = "Brevinema abundance", add = "jitter", fill="xvar", palette = (c("#66CDAA", "#7e4e90ff"))) +
+  theme(legend.position = "none") +
+  scale_y_continuous(labels = scales::percent)+
+  theme(text = element_text(size=25), panel.background = element_rect(fill = "white", colour = "black",
+                                                                      size = 1, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "grey"))
+                                        
+#PERMANOVA
+
+phy_gut_tank_control_sqrt <- transform_sample_counts(phy_gut_tank_control, function(x) sqrt(x / sum(x)))
+levels(metadata$Days_post_antibiotic)
+metadata$Days_post_antibiotic <- factor(metadata$Days_post_antibiotic, levels = c("3", "5", "11", "18"))
+ord_phy_gut_tank_control_sqrt_wunifrac <- ordinate(phy_gut_tank_control_sqrt, "PCoA", "unifrac", weighted=TRUE)
+ord_phy_gut_tank_control_sqrt_unwwunifrac <- ordinate(phy_gut_tank_control_sqrt, "PCoA", "unifrac", weighted=FALSE)
+ord_phy_gut_tank_control_sqrt_bray <- ordinate(phy_gut_tank_control_sqrt, "PCoA", "bray")
+ord_nmds_phy_gut_tank_control_sqrt <- ordinate(phy_gut_tank_control_sqrt, "NMDS", "unifrac", weighted=TRUE)
+plot_ordination(phy_gut_tank_control_sqrt, ord_phy_gut_tank_control_sqrt_unwwunifrac, color = "Antibiotic", shape = "Days_post_antibiotic") +
+  geom_point(size=4) +
+  scale_color_manual(values =c("#66CDAA", "#7e4e90ff")) +
+  scale_shape_manual(values=c(17, 3, 15, 16)) +
+  theme_bw()+
+  theme(text = element_text(size=20), panel.background = element_rect(fill = "white", colour = "black",
+                                                                      size = 1, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "grey"))
+
+metadata_adonis <- as(sample_data(phy_gut_tank_control_sqrt), "data.frame")
+dist.uf <- phyloseq::distance(phy_gut_tank_control_sqrt, method = "bray")
+ps.adonis <- adonis(dist.uf ~ Antibiotic*Days_post_antibiotic, data = metadata_adonis, perm=9999)
+ps.adonis
+plot_ordination(phy_gut_tank_control_sqrt, ord_nmds_phy_gut_tank_control_sqrt, color = "Antibiotic", shape = "Days_post_antibiotic") +
+  geom_point(size = 4)
+
+
+dist_phy_skin_tank_control_sqrt_unwuni <- phyloseq::distance(phy_skin_tank_control_sqrt, method="unifrac")
+matrix_unwuni_skinantibio <- as.data.frame(as.matrix(dist_phy_skin_tank_control_sqrt_unwuni))
+write.csv(matrix_unwuni_skinantibio, file="matrix_unwuni_skinantibio.csv")
+
+
+phy_skin_tank_control_sqrt <- transform_sample_counts(phy_skin_tank_control, function(x) sqrt(x / sum(x)))
+ord_phy_skin_tank_control_sqrt_bray <- ordinate(phy_skin_tank_control_sqrt, "PCoA", "bray")
+ord_phy_skin_tank_control_sqrt_wunifrac <- ordinate(phy_skin_tank_control_sqrt, "PCoA", "unifrac", weighted=TRUE)
+ord_phy_skin_tank_control_sqrt_unwunifrac <- ordinate(phy_skin_tank_control_sqrt, "PCoA", "unifrac", weighted=FALSE)
+plot_ordination(phy_skin_tank_control_sqrt, ord_phy_skin_tank_control_sqrt_unwunifrac, color = "Antibiotic", shape = "Days_post_antibiotic") +
+  geom_point(size=5) +
+  scale_color_manual(values =c("#66CDAA", "#7e4e90ff")) +
+  scale_shape_manual(values=c(17, 3, 15, 16)) +
+  theme_bw()+
+  theme(text = element_text(size=20), panel.background = element_rect(fill = "white", colour = "black",
+                                                                      size = 1, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "grey"))
+
+metadata_adonis <- as(sample_data(phy_skin_tank_control_sqrt), "data.frame")
+dist.uf <- phyloseq::distance(phy_skin_tank_control_sqrt, method = "bray")
+ps.adonis <- adonis(dist.uf ~ Antibiotic*Days_post_antibiotic, data = metadata_adonis, perm=9999)
+ps.adonis
+pairwise.adonis(dist.uf, phy_skin_tank_control_sqrt@sam_data$Days_post_antibiotic, p.adjust.m = "bonferroni")
+
+phy_gut_transplant_sqrt <- transform_sample_counts(phy_gut_transplant, function(x) sqrt(x / sum(x)))
+ord_phy_gut_transplant_sqrt_bray <- ordinate(phy_gut_transplant_sqrt, "PCoA", "bray")
+ord_phy_gut_transplant_sqrt_bray_nmds <- ordinate(phy_gut_transplant_sqrt, "NMDS", "bray")
+plot_ordination(phy_gut_transplant_sqrt, ord_phy_gut_transplant_sqrt_bray, color = "Treatment", shape = "Days_post_transplant") +
+  geom_point(size=4) +
+  scale_shape_manual(values=c(17, 16, 15, 3)) +
+  scale_color_manual(values =c("orchid1", "mediumpurple", "darkmagenta", "chartreuse3", "turquoise3", "dimgray", "mediumaquamarine")) +
+  theme_bw()+
+  theme(text = element_text(size=20), panel.background = element_rect(fill = "white", colour = "black",
+                                                                      size = 1, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "grey"))
+
+phy_gut_transplant_nod0_sqrt <- transform_sample_counts(phy_gut_transplant_nod0, function(x) sqrt(x / sum(x)))
+ord_phy_gutonly_transplant_sqrt_bray <- ordinate(phy_gutonly_transplant_sqrt, "PCoA", "bray")
+ord_phy_gutonly_transplant_sqrt_bray_nmds <- ordinate(phy_gutonly_transplant_sqrt, "NMDS", "bray")
+plot_ordination(phy_gutonly_transplant_sqrt, ord_phy_gutonly_transplant_sqrt_bray_nmds, color = "Treatment", shape = "Days_post_transplant") +
+  geom_point(size=4) +
+  scale_shape_manual(values=c(17, 16, 15, 3)) +
+  scale_color_manual(values =c("orchid1", "mediumpurple", "darkmagenta", "chartreuse3", "turquoise3", "dimgray", "mediumaquamarine")) +
+  theme_bw()+
+  theme(text = element_text(size=20), panel.background = element_rect(fill = "white", colour = "black",
+                                                                      size = 1, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "grey"))
+
+# Adonis for effect of both inomethod and time on the antibio and non antibio group
+phy_gut_transplant_nod0_noantibio <- subset_samples(phy_gut_transplant_nod0, Antibiotic %in% "no")
+phy_gut_transplant_nod0_noantibio_sqrt <- transform_sample_counts(phy_gut_transplant_nod0_noantibio, function(x) sqrt(x / sum(x)))
+metadata_adonis <- as(sample_data(phy_gut_transplant_nod0_noantibio_sqrt), "data.frame")
+dist.uf <- phyloseq::distance(phy_gut_transplant_nod0_noantibio_sqrt, method = "bray")
+ps.adonis <- adonis(dist.uf ~ InoculationMethod*TimePoint, data = metadata_adonis, perm=9999)
+ps.adonis
+pairwise.adonis(dist.uf, phy_gut_transplant_nod0_noantibio_sqrt@sam_data$TimePoint, p.adjust.m = "fdr")
+
+#With T0
+
+phy_gut_transplant_noantibio <- subset_samples(phy_gutonly_transplant, Antibiotic %in% "no")
+phy_gut_transplant_nod0_noantibio_sqrt <- transform_sample_counts(phy_gut_transplant_nod0_noantibio, function(x) sqrt(x / sum(x)))
+metadata_adonis <- as(sample_data(phy_gut_transplant_nod0_noantibio_sqrt), "data.frame")
+dist.uf <- phyloseq::distance(phy_gut_transplant_nod0_noantibio_sqrt, method = "bray")
+ps.adonis <- adonis(dist.uf ~ InoculationMethod*TimePoint, data = metadata_adonis, perm=9999)
+ps.adonis
+pairwise.adonis(dist.uf, phy_gut_transplant_nod0_noantibio_sqrt@sam_data$TimePoint, p.adjust.m = "fdr")
+
+#Beta diversity for FMT effect
+
+#Gut antibio
+#Get matrix
+phy_gut_bray <- subset_samples(phy_all, bray %in% "yes")
+phy_gut_bray_sqrt <- transform_sample_counts(phy_gut_bray, function(x) sqrt(x / sum(x)))
+dist_phy_gut_bray_sqrt_bray <- phyloseq::distance(phy_gut_bray_sqrt, "bray")
+df <- melt(as.matrix(dist_phy_gut_bray_sqrt_bray), varnames = c("row", "col"))
+write.csv(df, file="dist_bray.csv")
+
+antibiotics.labs <- c("Antibiotic", "No antibiotic")
+names(antibiotics.labs) <- c("yes", "no")
+inoculation.labs <- c("control", "water", "gavage")
+names(inoculation.labs) <- c("control", "water", "gavage")
+
+similarity_matrix <- read_csv("similarity_matrix.csv")
+reference <- read_csv("reference.csv")
+similarity_matrix_metadata <- merge(similarity_matrix, reference, all = FALSE)
+similarity_matrix_metadata$Days <- factor(similarity_matrix_metadata$Days, levels = c("0", "2", "8", "15"))
+similarity_matrix_metadata %>%
+  ggplot(aes(x=Days, y=Similarity, group1=Antibiotic, group2=Days, colour=InoculationMethod)) +
+  geom_point(size=3) +
+  geom_smooth(se = FALSE, stat="smooth", aes(group=InoculationMethod, color=InoculationMethod, fill=InoculationMethod))+
+  facet_grid(InoculationMethod~Antibiotic, labeller = labeller(Antibiotic = antibiotics.labs, InoculationMethod = inoculation.labs)) +
+  theme_bw() +
+  scale_color_manual(values=c("#56B4E9", "#FC4E07", "#E69F00")) +
+  scale_fill_manual(values=c("#56B4E9", "#FC4E07", "#E69F00")) +
+  xlab("Days post transplant") +
+  ylab("mean BC % similarity to inoculum") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1))+
+  theme(text = element_text(size=20))+
+  theme(legend.position = "none") +
+  theme(text = element_text(size=24), panel.background = element_rect(fill = "white", colour = "black",
+                                                                      size = 1, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "grey"))
+
+similarity_matrix_metadata %>%
+  ggplot(aes(x=Days, y=Similarity, group1=Antibiotic, group2=Days, fill=InoculationMethod)) +
+  geom_smooth(se = FALSE, stat="smooth", aes(group=InoculationMethod, color=InoculationMethod, fill=InoculationMethod))+
+  geom_jitter()+
+  facet_grid(InoculationMethod~Antibiotic, labeller = labeller(Antibiotic = antibiotics.labs, InoculationMethod = inoculation.labs)) +
+  theme_bw() +
+  xlab("Days post transplant") +
+  ylab("mean BC % similarity to inoculum") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1))+
+  theme(text = element_text(size=20))+
+  theme(legend.position = "none") +
+  theme(text = element_text(size=24), panel.background = element_rect(fill = "white", colour = "black",
+                                                                      size = 1, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "grey"))
+
+similarity_matrix <- read_csv("similarity_matrix_vsrespectivecontrol.csv")
+reference <- read_csv("reference.csv")
+similarity_matrix_metadata <- merge(similarity_matrix, reference, all = FALSE)
+similarity_matrix_metadata$Days <- factor(similarity_matrix_metadata$Days, levels = c("0","2", "8", "15"))
+similarity_matrix_metadata %>%
+  ggplot(aes(x=Days, y=Dissimilarity, group1=Antibiotic, group2=Days, fill=InoculationMethod)) +
+  geom_boxplot() +
+  facet_grid(InoculationMethod~Antibiotic, labeller = labeller(Antibiotic = antibiotics.labs, InoculationMethod = inoculation.labs)) +
+  theme_bw() +
+  scale_color_manual(values=c("#56B4E9", "#FC4E07", "#E69F00")) +
+  scale_fill_manual(values=c("#56B4E9", "#FC4E07", "#E69F00")) +
+  xlab("Days post transplant") +
+  ylab("mean BC % dissimilarity to controls") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1))+
+  theme(text = element_text(size=20))+
+  theme(legend.position = "none") +
+  theme(text = element_text(size=24), panel.background = element_rect(fill = "white", colour = "black",
+                                                                      size = 1, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "grey"))
+#For only gavage and water
+similarity_matrix_metadata %>%
+  ggplot(aes(x=Days, y=Dissimilarity, group1=Antibiotic, group2=Days, fill=InoculationMethod)) +
+  geom_boxplot() +
+  facet_grid(InoculationMethod~Antibiotic, labeller = labeller(Antibiotic = antibiotics.labs, InoculationMethod = inoculation.labs)) +
+  theme_bw() +
+  scale_color_manual(values=c("#FC4E07", "#E69F00")) +
+  scale_fill_manual(values=c("#FC4E07", "#E69F00")) +
+  xlab("Days post transplant") +
+  ylab("mean BC % dissimilarity to controls") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1))+
+  theme(text = element_text(size=20))+
+  theme(legend.position = "none") +
+  theme(text = element_text(size=24), panel.background = element_rect(fill = "white", colour = "black",
+                                                                      size = 1, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "grey"))
+
+#Effect of FMT
+#Antibio
+phy_gut_antibio <- subset_samples(phy_gut, Antibiotic %in% "yes")
+phy_gut_antibio_sqrt <- transform_sample_counts(phy_gut_antibio, function(x) sqrt(x / sum(x)))
+ord_phy_gut_antibio_sqrt_bray <- ordinate(phy_gut_antibio_sqrt, "PCoA", "bray")
+plot_ordination(phy_gut_antibio_sqrt, ord_phy_gut_antibio_sqrt_bray, color = "InoculationMethod", shape="Days_post_transplant") +
+  geom_point(size=4) +
+  scale_color_manual(values =c("#56B4E9", "#FC4E07", "#E69F00")) +
+  theme_bw()+
+  theme(text = element_text(size=20), panel.background = element_rect(fill = "white", colour = "black",
+                                                                      size = 1, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "grey"))
+
+metadata_adonis <- as(sample_data(phy_gut_antibio_sqrt), "data.frame")
+dist.uf <- phyloseq::distance(phy_gut_antibio_sqrt, method = "bray")
+ps.adonis <- adonis(dist.uf ~ InoculationMethod*Days_post_transplant, data = metadata_adonis, perm=9999)
+ps.adonis
+pairwise.adonis(dist.uf, phy_gut_antibio_sqrt@sam_data$InoculationMethod, p.adjust.m = "bonferroni")
+
+
+#NoAntibio
+phy_gut_noantibio <- subset_samples(phy_gut_tank, Antibiotic %in% "no")
+phy_gut_noantibio_sqrt <- transform_sample_counts(phy_gut_noantibio, function(x) sqrt(x / sum(x)))
+ord_phy_gut_noantibio_sqrt_bray <- ordinate(phy_gut_noantibio_sqrt, "PCoA", "bray")
+plot_ordination(phy_gut_noantibio_sqrt, ord_phy_gut_noantibio_sqrt_bray, color = "InoculationMethod", shape="Days_post_transplant") +
+  geom_point(size=4) +
+  scale_color_manual(values =c("#56B4E9", "#FC4E07", "#E69F00")) +
+  theme_bw()+
+  theme(text = element_text(size=20), panel.background = element_rect(fill = "white", colour = "black",
+                                                                      size = 1, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "grey"))
+
+metadata_adonis <- as(sample_data(phy_gut_noantibio_sqrt), "data.frame")
+dist.uf <- phyloseq::distance(phy_gut_noantibio_sqrt, method = "bray")
+ps.adonis <- adonis(dist.uf ~ InoculationMethod*Days_post_transplant, data = metadata_adonis, perm=9999)
+ps.adonis
+pairwise.adonis(dist.uf, phy_gut_noantibio_sqrt@sam_data$Days_post_transplant, p.adjust.m = "bonferroni")
+
+#Deseq2
+
+#Antibiotics effect
+diagdds = phyloseq_to_deseq2(phy_gut_tank_control, ~ Antibiotics)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res = results(diagdds, cooksCutoff = FALSE)
+alpha = 0.05
+sigtab3 = res[which(res$padj < alpha), ]
+sigtab3 = cbind(as(sigtab3, "data.frame"), as(tax_table(phy_gut_tank_control)[rownames(sigtab3), ], "matrix"))
+head(sigtab3)
+dim(sigtab3)
+write.csv(sigtab3, file="deseq2_gut_antibio.csv")
+
+diagdds = phyloseq_to_deseq2(phy_gut_tank_control_merged, ~ Antibiotics)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res = results(diagdds, cooksCutoff = FALSE)
+alpha = 0.05
+sigtab7 = res[which(res$padj < alpha), ]
+sigtab7 = cbind(as(sigtab7, "data.frame"), as(tax_table(phy_gut_tank_control_merged)[rownames(sigtab7), ], "matrix"))
+head(sigtab7)
+dim(sigtab7)
+
+diagdds = phyloseq_to_deseq2(phy_skin_tank_control, ~ Antibiotics)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res = results(diagdds, cooksCutoff = FALSE)
+alpha = 0.05
+sigtab4 = res[which(res$padj < alpha), ]
+sigtab4 = cbind(as(sigtab4, "data.frame"), as(tax_table(phy_skin_tank_control)[rownames(sigtab4), ], "matrix"))
+head(sigtab4)
+dim(sigtab4)
+write.csv(sigtab4, file="deseq2_skin_antibio.csv")
+
+diagdds = phyloseq_to_deseq2(phy_skin_tank_control_merged, ~ Antibiotics)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res = results(diagdds, cooksCutoff = FALSE)
+alpha = 0.05
+sigtab8 = res[which(res$padj < alpha), ]
+sigtab8 = cbind(as(sigtab8, "data.frame"), as(tax_table(phy_skin_tank_control_merged)[rownames(sigtab8), ], "matrix"))
+head(sigtab8)
+dim(sigtab8)
+
+diagdds = phyloseq_to_deseq2(phy_skin_tank, ~ Antibiotics)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res = results(diagdds, cooksCutoff = FALSE)
+alpha = 0.05
+sigtab1 = res[which(res$padj < alpha), ]
+sigtab1 = cbind(as(sigtab1, "data.frame"), as(tax_table(phy_skin_tank)[rownames(sigtab1), ], "matrix"))
+head(sigtab1)
+dim(sigtab1)
+
+#Cultivation effect
+diagdds = phyloseq_to_deseq2(phy_gut_cagevstank, ~ Cultivation)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res = results(diagdds, cooksCutoff = FALSE)
+alpha = 0.05
+sigtab1 = res[which(res$padj < alpha), ]
+sigtab1 = cbind(as(sigtab1, "data.frame"), as(tax_table(phy_gut_cagevstank)[rownames(sigtab1), ], "matrix"))
+head(sigtab1)
+dim(sigtab1)
+write.csv(sigtab1, file="deseq2_gut_cultivation.csv")
+
+phy_skin_cagevstank <- subset_samples(phy_skinseawater_cagevstank, SampleType %in% "skin")
+diagdds = phyloseq_to_deseq2(phy_skin_cagevstank, ~ Cultivation)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res = results(diagdds, cooksCutoff = FALSE)
+alpha = 0.05
+sigtab2 = res[which(res$padj < alpha), ]
+sigtab2 = cbind(as(sigtab2, "data.frame"), as(tax_table(phy_skin_cagevstank)[rownames(sigtab2), ], "matrix"))
+head(sigtab2)
+dim(sigtab2)
+write.csv(sigtab2, file="deseq2_skin_cultivation.csv")
+
+#Transplant effect
+
+#All samples from d2
+
+phy_gut_tank_fromd2 <- subset_samples(phy_gut_tank, Lacto %in% "yes")
+
+diagdds = phyloseq_to_deseq2(phy_gut_tank_fromd2, ~ InoculationMethod)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res_transplant_controlvswater <- results(diagdds, test="Wald", contrast=c("InoculationMethod", "water", "control"))
+res_transplant_controlvsgavage <- results(diagdds, test="Wald", contrast=c("InoculationMethod", "gavage", "control"))
+alpha = 0.05
+res_transplant_controlvswater_signif = res_transplant_controlvswater[which(res_transplant_controlvswater$padj < alpha), ]
+res_transplant_controlvswater_signif = cbind(as(res_transplant_controlvswater_signif, "data.frame"), as(tax_table(phy_gut_tank_fromd2)[rownames(res_transplant_controlvswater_signif), ], "matrix"))
+res_transplant_controlvswater_signif
+write.csv(res_transplant_controlvswater_signif, file="deseq2_gut_transplant_controlvswater.csv")
+res_transplant_controlvsgavage_signif = res_transplant_controlvsgavage[which(res_transplant_controlvsgavage$padj < alpha), ]
+res_transplant_controlvsgavage_signif = cbind(as(res_transplant_controlvsgavage_signif, "data.frame"), as(tax_table(phy_gut_tank_fromd2)[rownames(res_transplant_controlvsgavage_signif), ], "matrix"))
+res_transplant_controlvsgavage_signif
+write.csv(res_transplant_controlvsgavage_signif, file="deseq2_gut_transplant_controlvsgavage.csv")
+
+#All samples merge genus
+diagdds = phyloseq_to_deseq2(phy_gut_tank_merged, ~ InoculationMethod)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res_transplant_mergedgenus_controlvswater <- results(diagdds, test="Wald", contrast=c("InoculationMethod", "water", "control"))
+res_transplant_mergedgenus_controlvsgavage <- results(diagdds, test="Wald", contrast=c("InoculationMethod", "gavage", "control"))
+res_transplant_mergedgenus_controlvswater_signif = res_transplant_mergedgenus_controlvswater[which(res_transplant_mergedgenus_controlvswater$padj < alpha), ]
+res_transplant_mergedgenus_controlvswater_signif = cbind(as(res_transplant_mergedgenus_controlvswater_signif, "data.frame"), as(tax_table(phy_gut_tank_merged)[rownames(res_transplant_mergedgenus_controlvswater_signif), ], "matrix"))
+res_transplant_mergedgenus_controlvswater_signif
+res_transplant_mergedgenus_controlvsgavage_signif = res_transplant_mergedgenus_controlvsgavage[which(res_transplant_mergedgenus_controlvsgavage$padj < alpha), ]
+res_transplant_mergedgenus_controlvsgavage_signif = cbind(as(res_transplant_mergedgenus_controlvsgavage_signif, "data.frame"), as(tax_table(phy_gut_tank_merged)[rownames(res_transplant_mergedgenus_controlvsgavage_signif), ], "matrix"))
+res_transplant_mergedgenus_controlvsgavage_signif
+
+#Day2only
+
+phy_gut_tank_d2 <- subset_samples(phy_gut_tank, Onlyd2 %in% "yes")
+
+diagdds = phyloseq_to_deseq2(phy_gut_tank_d2, ~ InoculationMethod)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res_transplant_d2_controlvswater <- results(diagdds, test="Wald", contrast=c("InoculationMethod", "water", "control"))
+res_transplant_d2_controlvsgavage <- results(diagdds, test="Wald", contrast=c("InoculationMethod", "gavage", "control"))
+res_transplant_d2_controlvswater_signif = res_transplant_d2_controlvswater[which(res_transplant_d2_controlvswater$padj < alpha), ]
+res_transplant_d2_controlvswater_signif = cbind(as(res_transplant_d2_controlvswater_signif, "data.frame"), as(tax_table(phy_gut_tank_d2)[rownames(res_transplant_d2_controlvswater_signif), ], "matrix"))
+res_transplant_d2_controlvswater_signif
+res_transplant_d2_controlvsgavage_signif = res_transplant_d2_controlvsgavage[which(res_transplant_d2_controlvsgavage$padj < alpha), ]
+res_transplant_d2_controlvsgavage_signif = cbind(as(res_transplant_d2_controlvsgavage_signif, "data.frame"), as(tax_table(phy_gut_tank_d2)[rownames(res_transplant_d2_controlvsgavage_signif), ], "matrix"))
+res_transplant_d2_controlvsgavage_signif
+
+# Make bar plot
+
+#Gut seacage vs tank
+
+phy_gut_cagevstank <- subset_samples(phy_all, Filtergutbarplot %in% "yes")
+phy_gut_mergedcagevstank <- merge_samples(phy_gut_cagevstank, "Barplotmerging")
+phy_gut_mergedcagevstank.rel <- transform_sample_counts(phy_gut_mergedcagevstank, function(x) x / sum(x) )
+phy_gut_mergedcagevstank_toptaxa20 <- get_top_taxa(physeq_obj=phy_gut_mergedcagevstank.rel, n=20, discard_other = TRUE)
+phy_gut_mergedcagevstank_toptaxa300 <- get_top_taxa(physeq_obj=phy_gut_mergedcagevstank.rel, n=300, discard_other = TRUE)
+phy_gut_mergedcagevstank_toptaxa300_mergedphyla <- tax_glom(phy_gut_mergedcagevstank_toptaxa300, taxrank="Phylum")
+
+plot_bar(phy_gut_mergedcagevstank_toptaxa20, fill="Genus") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 1)) +
+  scale_fill_manual(values=c("brown", "brown1", "chocolate1", "chartreuse", "chartreuse4", "cornflowerblue", "cyan3", "darkcyan", "darkorchid1", "darkmagenta")) +
+  theme(text = element_text(size=20)) +
+  theme(axis.text.x = element_text(angle = 0, hjust = 0.5)) +
+  theme(panel.background = element_rect(fill = "white", colour = "black",
+                                    size = 1, linetype = "solid"),
+    panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                    colour = "black"))
+
+plot_bar(phy_gut_mergedcagevstank_toptaxa300_mergedphyla, fill="Phylum") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 1)) +
+  theme(text = element_text(size=20)) +
+  theme(axis.text.x = element_text(angle = 0, hjust = 0.5)) +
+  theme(panel.background = element_rect(fill = "white", colour = "black",
+                                        size = 1, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "black"))
+
+phy_gut_cagevstank_mergedtaxa <- tax_glom(phy_gut_cagevstank, taxrank="Genus")
+phy_gut_cagevstank_mergedtaxa.rel <- transform_sample_counts(phy_gut_cagevstank_mergedtaxa, function(x) x / sum(x) )
+phy_gut_cagevstank_mergedtaxa_toptaxa10 <- get_top_taxa(physeq_obj=phy_gut_cagevstank_mergedtaxa.rel, n=10, discard_other = TRUE)
+plot_bar(phy_gut_cagevstank_mergedtaxa_toptaxa10, fill="Genus") +
+  scale_y_continuous(labels = scales::percent) +
+  theme(legend.title = element_text( size=12), legend.text=element_text(size=10)) +
+  theme(axis.text.x = element_text(size = 10))
+fantaxtic_bar(phy_gut_mergedcagevstank_toptaxa100_mergedphyla, color_by = "Phylym", label_by = "Phylum", other_label = "Other",
+              order_alg = "other.abnd")
+
+#Skin seacage vs tank with seawater
+
+phy_skinseawater_cagevstank <- subset_samples(phy_all, Filterskinbarplot %in% "yes")
+phy_skinseawater_mergedcagevstank <- merge_samples(phy_skinseawater_cagevstank, "Barplotmerging")
+phy_skinseawater_mergedcagevstank_mergedtaxa <- tax_glom(phy_skinseawater_mergedcagevstank, taxrank="Class")
+phy_skinseawater_mergedcagevstank_mergedtaxa.rel <- transform_sample_counts(phy_skinseawater_mergedcagevstank_mergedtaxa, function(x) x / sum(x) )
+phy_skinseawater_mergedcagevstank_toptaxa10 <- get_top_taxa(physeq_obj=phy_skinseawater_mergedcagevstank_mergedtaxa.rel, n=10, discard_other = TRUE)
+plot_bar(phy_skinseawater_mergedcagevstank_toptaxa10, fill="Class") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 1)) +
+  scale_fill_manual(values=c("brown", "brown1", "chocolate1", "chartreuse", "chartreuse4", "cornflowerblue", "cyan3", "darkcyan", "darkorchid1", "darkmagenta")) +
+  theme(text = element_text(size=20)) +
+  theme(axis.text.x = element_text(angle = 20, hjust = 0.8)) +
+  theme(panel.background = element_rect(fill = "white", colour = "black",
+                                        size = 1, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "black"))
+
+phy_skinseawater_mergedcagevstank_mergedphylum <- tax_glom(phy_skinseawater_mergedcagevstank, taxrank="Phylum")
+phy_skinseawater_mergedcagevstank_mergedphylum.rel <- transform_sample_counts(phy_skinseawater_mergedcagevstank_mergedphylum, function(x) x / sum(x) )
+phy_skinseawater_mergedcagevstank_topphylum10 <- get_top_taxa(physeq_obj=phy_skinseawater_mergedcagevstank_mergedphylum.rel, n=10, discard_other = TRUE)
+plot_bar(phy_skinseawater_mergedcagevstank_topphylum10, fill="Phylum") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 1)) +
+  theme(text = element_text(size=20)) +
+  theme(axis.text.x = element_text(angle = 20, hjust = 0.8)) +
+  theme(panel.background = element_rect(fill = "white", colour = "black",
+                                        size = 1, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "black"))
+
+phy_skinseawater_mergedcagevstank_mergedgenus <- tax_glom(phy_skinseawater_mergedcagevstank, taxrank="Genus")
+phy_skinseawater_mergedcagevstank_mergedgenus.rel <- transform_sample_counts(phy_skinseawater_mergedcagevstank_mergedgenus, function(x) x / sum(x) )
+phy_skinseawater_mergedcagevstank_topgenus20 <- get_top_taxa(physeq_obj=phy_skinseawater_mergedcagevstank_mergedgenus.rel, n=20, discard_other = TRUE)
+plot_bar(phy_skinseawater_mergedcagevstank_topgenus20, fill="Genus") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 1)) +
+  theme(text = element_text(size=20)) +
+  theme(axis.text.x = element_text(angle = 20, hjust = 0.8)) +
+  theme(panel.background = element_rect(fill = "white", colour = "black",
+                                        size = 1, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "black"))
+#Gut transplant
+gutorinoculum = c("gut", "inoculum")
+phy_gut_inoculum <- subset_samples(phy_all, SampleType %in% gutorinoculum)
+phy_gut_inoculum_mergedsamples <- merge_samples(phy_gut_inoculum, "TimeTreatment")
+phy_gut_inoculum_mergedsamples.rel <- transform_sample_counts(phy_gut_inoculum_mergedsamples, function(x) x / sum(x) )
+phy_gut_inoculum_mergedsamples.rel.filt = filter_taxa(phy_gut_inoculum_mergedsamples.rel, function(x) sum(x) > 0.01, TRUE)
+phy_gut_inoculum_mergedsamples.rel.filt2 = filter_taxa(phy_gut_inoculum_mergedsamples.rel, function(x) sum(x) > 0.001, TRUE)
+plot_bar(phy_gut_inoculum_mergedsamples.rel.filt, fill="Family")
+plot_bar(phy_gut_inoculum_mergedsamples.rel.filt2, fill="Genus")
+
+phy_gut_inoculum_mergedsamples_toptaxa <- get_top_taxa(physeq_obj=phy_gut_inoculum_mergedsamples.rel, n=20, discard_other = TRUE)
+phy_gut_inoculum_mergedsamples_toptaxa_withother <- get_top_taxa(physeq_obj=phy_gut_inoculum_mergedsamples.rel, n=20)
+order_plot = c("inoculum-unspiked", "inoculum-spiked", "day0-control", "day0-water", "day0-gavage", "day0-antibiotics", "day0-antibiotics-water", "day0-antibiotics-gavage", "day2-control", "day2-water", "day2-gavage", "day2-antibiotics", "day2-antibiotics-water", "day2-antibiotics-gavage", "day8-control", "day8-water", "day8-gavage", "day8-antibiotics", "day8-antibiotics-water", "day8-antibiotics-gavage", "day15-control", "day15-water", "day15-gavage", "day15-antibiotics", "day15-antibiotics-water", "day15-antibiotics-gavage")
+plot_bar(phy_gut_inoculum_mergedsamples_toptaxa, fill="Genus") +
+  scale_fill_manual(values=c("brown", "chocolate1", "brown1", "chartreuse", "chartreuse4", "cyan3", "darkcyan", "cornflowerblue", "palevioletred3", "blue3", "darkorchid1", "darkmagenta")) +
+  scale_x_discrete(limits = order_plot) +
+  scale_y_continuous(labels = scales::percent) +
+  theme(text = element_text(size=15)) +
+  theme(axis.text.x = element_text(size = 12, angle = 40, hjust = 1)) +
+  theme(panel.background = element_rect(fill = "white", colour = "black",
+                                        size = 1, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "black"))
+
+plot_bar(phy_gut_inoculum_mergedsamples_toptaxa, fill="Genus") +
+  scale_fill_manual(values=c("brown", "chocolate1", "brown1", "chartreuse", "chartreuse4", "cyan3", "darkcyan", "cornflowerblue", "palevioletred3", "blue3", "darkorchid1", "darkmagenta")) +
+  scale_x_discrete(limits = order_plot) +
+  scale_y_continuous(labels = scales::percent) +
+  theme(text = element_text(size=15)) +
+  theme(axis.text.x = element_text(size = 12, angle = 40, hjust = 1)) +
+  theme(panel.background = element_rect(fill = "white", colour = "black",
+                                        size = 1, linetype = "solid"))
+
+#Skin
+skinorseawater = c("skin", "seawater")
+phy_skin_seawater <- subset_samples(phy_all, SampleType %in% skinorseawater)
+phy_skin_seawater_mergedsamples <- merge_samples(phy_skin_seawater, "TimeTreatment")
+phy_skin_seawater_mergedsamples_mergedtaxa <- tax_glom(phy_skin_seawater_mergedsamples, taxrank="Genus")
+phy_skin_seawater_mergedsamples.rel <- transform_sample_counts(phy_skin_seawater_mergedsamples_mergedtaxa, function(x) x / sum(x) )
+phy_skin_seawater_mergedsamples.rel.filt = filter_taxa(phy_skin_seawater_mergedsamples.rel, function(x) sum(x) > 0.01, TRUE)
+
+phy_skin_seawater_mergedsamples_top100 <- get_top_taxa(physeq_obj=phy_skin_seawater_mergedsamples.rel, n=100, discard_other = TRUE)
+order_plot_skin = c("day0-seawater", "day15-seawater", "day0-control", "day0-water", "day0-gavage", "day0-antibiotics", "day0-antibiotics-water", "day0-antibiotics-gavage", "day2-control", "day2-water", "day2-gavage", "day2-antibiotics", "day2-antibiotics-water", "day2-antibiotics-gavage", "day8-control", "day8-water", "day8-gavage", "day8-antibiotics", "day8-antibiotics-water", "day8-antibiotics-gavage", "day15-control", "day15-water", "day15-gavage", "day15-antibiotics", "day15-antibiotics-water", "day15-antibiotics-gavage")
+plot_bar(phy_skin_seawater_mergedsamples_top100, fill="Class") +
+  scale_x_discrete(limits = order_plot_skin) +
+  scale_y_continuous(labels = scales::percent) +
+  geom_bar(aes(color=Class, fill=Class), stat="identity", position="stack")
+
+
+
+
+
